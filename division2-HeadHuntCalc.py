@@ -18,6 +18,8 @@ agent_config = {
 
 Forcing_Chest_ChainKiller = False # 是否強制綁定連環殺手
 
+Activate_Sesonal_Modifier = False # 是否啟用賽季修改器
+
 query_config = {
     "filter": {
         "first_hit": {
@@ -212,6 +214,60 @@ def equip_mods(stats, mods):
             stats["HSD"] += 0
     return stats
 
+# ✔ 賽季修改器 (預設關閉)
+def get_season_bonus():
+    """
+    從終端讀取賽季加成，回傳 dict
+    """
+    bonus = {}
+
+    print("格式: 屬性 數值 (例如: HSD 15)")
+    print("輸入 done 結束\n")
+
+    while True:
+        user_input = input("請輸入: ").strip()
+
+        if user_input.lower() == "done":
+            break
+
+        if not user_input:
+            continue
+
+        parts = user_input.split()
+
+        if len(parts) != 2:
+            print("❌ 格式錯誤")
+            continue
+
+        key, value = parts
+
+        try:
+            value = float(value)
+        except ValueError:
+            print("❌ 數值錯誤")
+            continue
+
+        # 累加（允許同一屬性輸入多次）
+        bonus[key] = bonus.get(key, 0) + value
+
+        print(f"✅ 已加入: {key} +{value}")
+
+    print("=== 賽季修改器輸入完成 ===\n")
+
+    return bonus
+
+def apply_season_bonus(stats, bonus):
+    for k, v in bonus.items():
+        if k in stats:
+            stats[k] += v
+        else:
+            print(f"⚠️ 忽略未知屬性: {k}")
+    return stats
+
+if Activate_Sesonal_Modifier == True:
+    print("\n=== 賽季修改器啟用中 ===")
+    season_bonus = get_season_bonus()
+
 # 整合所有「基礎數值來源」 (👉 上述的數值來源都在這裡集中處理)
 def build_base_stats(config):
 
@@ -383,6 +439,8 @@ def evaluate_build(combo, config):
 
     stats = build_base_stats(config)
     stats = apply_brand_effects(brand_count, stats)
+    if Activate_Sesonal_Modifier == True:
+        stats = apply_season_bonus(stats, season_bonus)
     stats = apply_item_stats(combo, stats)
     stats = finalize_stats(stats, config)
 
@@ -465,6 +523,8 @@ def format_stats(stats, ndigits=1):
         else:
             formatted[k] = v
     return formatted
+
+print(f"符合條件組合數量: {len(apply_filters(results, query_config))}")
 
 final_results = run_query(results, query_config)
 
