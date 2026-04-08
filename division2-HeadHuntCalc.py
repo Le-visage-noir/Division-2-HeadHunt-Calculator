@@ -7,31 +7,32 @@ from collections import Counter
 # =========================================================
 
 agent_config = {
-    "agent_watch": 1000,       # 手錶等級(預設武器傷害及爆頭傷害全滿)
-    "agent_class": "精準射手",  # 精準射手提供爆頭傷害、爆破專家提供掩體外傷害，其他特化職業不影響堅定獵頭傷害計算
-    "weapon": "1886",          # 目前可選用 1886, SR-1, 白色死神, 戰術.308
-    "weapon_grade": 15,        # 武器專精等級
-    "equip_core": 6,           # 裝備詞條當中 "武器傷害"(預設滿數值) 的數量
-    "equip_sub": 6,            # 裝備詞條當中 "爆頭傷害"(預設滿數值) 的數量、"昏頭脹腦" 也計入此項
-    "mods": [10, 10, 10]       # 裝備模組，可填寫 "爆頭傷害 10 %" 或是數字
+    "agent_watch": 1000,          # 手錶等級(預設武器傷害及爆頭傷害全滿)
+    "agent_class": "精準射手",     # 精準射手提供爆頭傷害、爆破專家提供掩體外傷害，其他特化職業不影響堅定獵頭傷害計算
+    "weapon": "1886",             # 目前可選用 1886, SR-1, 白色死神, 戰術.308
+    "weapon_grade": 15,           # 武器專精等級
+    "equip_core": 6,              # 裝備詞條當中 "武器傷害"(預設滿數值) 的數量
+    "equip_sub": 6,               # 裝備詞條當中 "爆頭傷害"(預設滿數值) 的數量、"昏頭脹腦" 也計入此項
+    "mods": [9.7, 9.7, 9.7],      # 裝備模組，可填寫 "爆頭傷害 10 %" 或是數字
+    "weapon_prototype": [False, "WD_rifle"] # 武器是否為原形(三個詞條當中滿數值的那一個種類)
 }
 
 Forcing_Chest_ChainKiller = False # 是否強制綁定連環殺手
 
-Activate_Sesonal_Modifier = False # 是否啟用賽季修改器
+Activate_Sesonal_Modifier = True  # 是否啟用賽季修改器
 
 query_config = {
     "filter": {
         "first_hit": {
-            "enabled": False,  # 依據第一擊傷害作為篩選門檻
+            "enabled": True,  # 依據第一擊傷害作為篩選門檻
             "min": 6_360_822   # 單人 + 英雄難度，一般老練敵人(紫怪)
         },
         "second_hit": {
-            "enabled": False,  # 依據第二擊傷害作為篩選門檻
+            "enabled": True,  # 依據第二擊傷害作為篩選門檻
             "min": 14_752_327  # 單人 + 傳奇難度，一般菁英敵人(金怪)
         },
         "upper_limit": {
-            "enabled": False,  # 依據傷害上限作為篩選門檻
+            "enabled": True,  # 依據傷害上限作為篩選門檻
             "min": 25_172_179  # 四人 + 傳奇難度，一般菁英敵人(金怪)
         }
     },
@@ -214,6 +215,17 @@ def equip_mods(stats, mods):
             stats["HSD"] += 0
     return stats
 
+# ✔ 原形裝備 (目前僅考慮武器數值、暫未考慮強化天賦)
+def prototype(stats, weapon_prototype):
+    if weapon_prototype[0] == True:
+        if weapon_prototype[1] == "WD_rifle" or weapon_prototype[1] == "WD_marksman":
+            stats[weapon_prototype[1]] += 7.5
+        elif weapon_prototype[1] == "HSD":
+            stats["HSD"] += 55.5
+        elif weapon_prototype[1] == "DTTOOC":
+            stats["DTTOOC"] += 5
+    return stats
+
 # ✔ 賽季修改器 (預設關閉)
 def get_season_bonus():
     """
@@ -280,6 +292,7 @@ def build_base_stats(config):
     stats = equip_main(stats, config["equip_core"])
     stats = equip_minor(stats, config["equip_sub"])
     stats = equip_mods(stats, config["mods"])
+    stats = prototype(stats, config["weapon_prototype"])
 
     return stats
 
@@ -525,6 +538,9 @@ def format_stats(stats, ndigits=1):
     return formatted
 
 print(f"符合條件組合數量: {len(apply_filters(results, query_config))}")
+
+if len(apply_filters(results, query_config)) == 0:
+    print("無符合條件之裝備組合，建議提高數值或調整修改器搭配、或是改用其他武器")
 
 final_results = run_query(results, query_config)
 
