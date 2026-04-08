@@ -37,7 +37,7 @@ query_config = {
         }
     },
     "sort": {
-        "key": "first_hit",    # 可依據 first_hit / second_hit / upper_limit 進行排序
+        "key": "second_hit",    # 可依據 first_hit / second_hit / upper_limit 進行排序
         "descending": True     # 由高到低進行排序
     },
     "top_n": 10                # 列出的配裝數量
@@ -424,36 +424,38 @@ def calc_damage(stats, combo, brand_count, max_hits=10):
     # =========================
     # 疊加傷害
     # =========================
-    damages = [D1]
+    damages = [D1] # 第一擊 (index 0)
     
 
     for i in range(1, max_hits):
         next_dmg = D1 + math.ceil(r * damages[-1])
         
-        if hotshot_4_addition and i >= 3: # 假設第二擊未到原傷害上限
-            DHH_upper_limit = math.ceil(DHH_upper_limit * 1.2)
-        
-        if hotshot_4_addition:
-            if i == 1:   # 頂專 4 件套、第二擊 (index 1)
-                next_dmg = math.ceil(next_dmg * 1.2)
-            elif i >= 3: # 頂專 4 件套、第四擊及之後 (index 3)
-                next_dmg = math.ceil(next_dmg * 1.2)
+        if hotshot_4_addition:  # 頂專 4 件套作用於 D1，因此傷害及上限都需要更新計算
+            if i == 1:          # 頂專 4 件套、第二擊 (index 1)
+                DHH_upper_limit = math.ceil(D1 * 1.2) + DHH_upper_addition
+                next_dmg = math.ceil(D1 * 1.2) + math.ceil(r * damages[-1])
+            elif i >= 4:        # 頂專 4 件套、第五擊及之後 (index 4)
+                DHH_upper_limit = math.ceil(D1 * 1.2) + DHH_upper_addition
+                next_dmg = math.ceil(D1 * 1.2) + math.ceil(r * damages[-1])
+            else:
+                DHH_upper_limit = D1 + DHH_upper_addition
+                next_dmg = D1 + math.ceil(r * damages[-1])
         
         if next_dmg > DHH_upper_limit:
             next_dmg = DHH_upper_limit
 
         damages.append(next_dmg)
 
-        if next_dmg == DHH_upper_limit and i >= 3:
+        if next_dmg == DHH_upper_limit and i >= 4:
             break
 
-    # 保證至少有四擊
-    while len(damages) < 4:
+    # 保證至少有五擊
+    while len(damages) < 5:
         damages.append(DHH_upper_limit)
 
     return {
         "first_hit": D1,
-        "first_4_hits": damages[:4],
+        "first_5_hits": damages[:5],
         "upper_limit": DHH_upper_limit
     }
 
@@ -479,9 +481,9 @@ def evaluate_build(combo, config):
         "combo": [item[0] for item in combo],
         "stats": stats,
         "first_hit": dmg_info["first_hit"],
-        "second_hit": dmg_info["first_4_hits"][1],
-        "third_hit": dmg_info["first_4_hits"][2],
-        "first_4_hits": dmg_info["first_4_hits"],
+        "second_hit": dmg_info["first_5_hits"][1],
+        "third_hit": dmg_info["first_5_hits"][2],
+        "first_5_hits": dmg_info["first_5_hits"],
         "upper_limit": dmg_info["upper_limit"]
     }
 
@@ -588,6 +590,6 @@ final_results = assign_rank(final_results, key=query_config["sort"]["key"])
 for r in final_results:
     print(f"\n=== 第 {r['rank']} 名 ===")
     print("裝備:  ", r["combo"])
-    print("前四擊:", r["first_4_hits"])
+    print("前五擊:", r["first_5_hits"])
     print("上限:  ", r["upper_limit"])
     print("數值:  ", format_stats(r["stats"]))
