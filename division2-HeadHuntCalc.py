@@ -10,10 +10,10 @@ agent_config = {
     "agent_watch": 1000,          # 手錶等級(預設武器傷害及爆頭傷害全滿)
     "agent_class": "精準射手",     # 精準射手提供爆頭傷害、爆破專家提供掩體外傷害，其他特化職業不影響堅定獵頭傷害計算
     "weapon": "1886",             # 目前可選用 1886, SR-1, 白色死神, 戰術.308
-    "weapon_grade": 15,           # 武器專精等級
+    "weapon_grade": 12,           # 武器專精等級
     "equip_core": 6,              # 裝備詞條當中 "武器傷害"(預設滿數值) 的數量
     "equip_sub": 6,               # 裝備詞條當中 "爆頭傷害"(預設滿數值) 的數量、"昏頭脹腦" 也計入此項
-    "mods": [9.7, 9.7, 9.7],      # 裝備模組，可填寫 "爆頭傷害 10 %" 或是數字
+    "mods": [8.5, 9.5, 9.7],      # 裝備模組(預設爆頭傷害)，可填寫 "爆頭傷害 10 %" 或是數字
     "weapon_prototype": [False, "WD_rifle"] # 武器是否為原形(三個詞條當中滿數值的那一個種類)
 }
 
@@ -24,15 +24,15 @@ Activate_Sesonal_Modifier = True  # 是否啟用賽季修改器
 query_config = {
     "filter": {
         "first_hit": {
-            "enabled": True,  # 依據第一擊傷害作為篩選門檻
+            "enabled": False,  # 依據第一擊傷害作為篩選門檻
             "min": 6_360_822   # 單人 + 英雄難度，一般老練敵人(紫怪)
         },
         "second_hit": {
-            "enabled": True,  # 依據第二擊傷害作為篩選門檻
+            "enabled": False,  # 依據第二擊傷害作為篩選門檻
             "min": 14_752_327  # 單人 + 傳奇難度，一般菁英敵人(金怪)
         },
         "upper_limit": {
-            "enabled": True,  # 依據傷害上限作為篩選門檻
+            "enabled": False,  # 依據傷害上限作為篩選門檻
             "min": 25_172_179  # 四人 + 傳奇難度，一般菁英敵人(金怪)
         }
     },
@@ -90,8 +90,8 @@ def is_valid_build(combo, Forcing_Chest_ChainKiller):
     if count["哈布斯"] > 2:
         return False
     
-    # ---- 頂專：2~3 或 0 ----
-    if not (count["頂專"] == 0 or 2 <= count["頂專"] <= 3):
+    # ---- 頂專：2~4 或 0 ----
+    if not (count["頂專"] == 0 or 2 <= count["頂專"] <= 4):
         return False
 
     # ---- 阿爾拉蒂：最多2 ----
@@ -328,6 +328,7 @@ def apply_brand_effects(brand_count, stats):
         stats["WD_marksman"] += 20
 
     # ---- 頂專 ----
+    # 4 件套效果獨立處理
     c = brand_count["頂專"]
     if c >= 2:
         stats["WD_marksman"] += 30
@@ -381,7 +382,7 @@ def get_chest_multiplier(combo):
     else:
         return 1.25
 
-def calc_damage(stats, combo, max_hits=10):
+def calc_damage(stats, combo, brand_count, max_hits=10):
     """
     chest_type:
         "連環殺手"  ---> 1.5
@@ -393,6 +394,11 @@ def calc_damage(stats, combo, max_hits=10):
     return_sequence:
         是否回傳每一擊傷害（分析用）
     """
+
+    def hotshot_4(brand_count):
+        return brand_count.get("頂專", 0) >= 4
+
+    hotshot_4_addition = hotshot_4(brand_count)
 
     # =========================
     # 倍率設定
@@ -419,25 +425,35 @@ def calc_damage(stats, combo, max_hits=10):
     # 疊加傷害
     # =========================
     damages = [D1]
+    
 
     for i in range(1, max_hits):
         next_dmg = D1 + math.ceil(r * damages[-1])
-
+        
+        if hotshot_4_addition and i >= 3: # 假設第二擊未到原傷害上限
+            DHH_upper_limit = math.ceil(DHH_upper_limit * 1.2)
+        
+        if hotshot_4_addition:
+            if i == 1:   # 頂專 4 件套、第二擊 (index 1)
+                next_dmg = math.ceil(next_dmg * 1.2)
+            elif i >= 3: # 頂專 4 件套、第四擊及之後 (index 3)
+                next_dmg = math.ceil(next_dmg * 1.2)
+        
         if next_dmg > DHH_upper_limit:
             next_dmg = DHH_upper_limit
 
         damages.append(next_dmg)
 
-        if next_dmg == DHH_upper_limit:
+        if next_dmg == DHH_upper_limit and i >= 3:
             break
 
-    # 保證至少有三擊
-    while len(damages) < 3:
+    # 保證至少有四擊
+    while len(damages) < 4:
         damages.append(DHH_upper_limit)
 
     return {
         "first_hit": D1,
-        "first_3_hits": damages[:3],
+        "first_4_hits": damages[:4],
         "upper_limit": DHH_upper_limit
     }
 
@@ -457,15 +473,15 @@ def evaluate_build(combo, config):
     stats = apply_item_stats(combo, stats)
     stats = finalize_stats(stats, config)
 
-    dmg_info = calc_damage(stats, combo)
+    dmg_info = calc_damage(stats, combo, brand_count)
 
     return {
         "combo": [item[0] for item in combo],
         "stats": stats,
         "first_hit": dmg_info["first_hit"],
-        "second_hit": dmg_info["first_3_hits"][1],
-        "third_hit": dmg_info["first_3_hits"][2],
-        "first_3_hits": dmg_info["first_3_hits"],
+        "second_hit": dmg_info["first_4_hits"][1],
+        "third_hit": dmg_info["first_4_hits"][2],
+        "first_4_hits": dmg_info["first_4_hits"],
         "upper_limit": dmg_info["upper_limit"]
     }
 
@@ -537,16 +553,41 @@ def format_stats(stats, ndigits=1):
             formatted[k] = v
     return formatted
 
-print(f"符合條件組合數量: {len(apply_filters(results, query_config))}")
+def assign_rank(results, key):
+    """
+    給 results 加上 rank（處理並列）
+    使用競賽排名：1,2,2,4
+    """
+
+    ranked = []
+
+    current_rank = 0
+    prev_value = None
+
+    for i, r in enumerate(results):
+        value = r[key]
+
+        if value != prev_value:
+            current_rank = i + 1   # ⭐ 關鍵
+            prev_value = value
+
+        r["rank"] = current_rank
+        ranked.append(r)
+
+    return ranked
+
+print(f"符合傷害門檻組合數量: {len(apply_filters(results, query_config))}")
 
 if len(apply_filters(results, query_config)) == 0:
-    print("無符合條件之裝備組合，建議提高數值或調整修改器搭配、或是改用其他武器")
+    print("無符合傷害門檻之裝備組合，建議提高數值或調整修改器搭配、或是改用其他武器")
 
 final_results = run_query(results, query_config)
 
-for i, r in enumerate(final_results, 1):
-    print(f"\n=== 第 {i} 名 ===")
+final_results = assign_rank(final_results, key=query_config["sort"]["key"])
+
+for r in final_results:
+    print(f"\n=== 第 {r['rank']} 名 ===")
     print("裝備:  ", r["combo"])
-    print("前三擊:", r["first_3_hits"])
+    print("前四擊:", r["first_4_hits"])
     print("上限:  ", r["upper_limit"])
     print("數值:  ", format_stats(r["stats"]))
