@@ -1,9 +1,10 @@
 import streamlit as st
 import pandas as pd
-from division2_HeadHuntCalc_Y8S1_TU27 import run_calculation
+from HeadHuntCalc_division2_Y8S1_TU27 import run_calculation
 
 st.title("Division 2 堅定獵頭配裝計算器")
 st.subheader("適用版本 Y8S1 / TU27")
+st.caption("Author: Le-visage-noir")
 # =========================
 # 側邊欄（所有輸入）
 # =========================
