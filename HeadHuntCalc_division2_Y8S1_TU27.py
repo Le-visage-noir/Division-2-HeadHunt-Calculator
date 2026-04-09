@@ -6,42 +6,44 @@ from collections import Counter
 # 【0】基礎配裝區 (包含武器 + 特化職業選擇，以及篩選及排序條件)
 # =========================================================
 
-agent_config = {
-    "agent_watch": 1000,          # 手錶等級(預設武器傷害及爆頭傷害全滿)
-    "agent_class": "精準射手",     # 精準射手提供爆頭傷害、爆破專家提供掩體外傷害，其他特化職業不影響堅定獵頭傷害計算
-    "weapon": "1886",             # 目前可選用 1886, SR-1, 白色死神, 戰術.308
-    "weapon_grade": 12,           # 武器專精等級
-    "equip_core": 6,              # 裝備詞條當中 "武器傷害"(預設滿數值) 的數量
-    "equip_sub": 6,               # 裝備詞條當中 "爆頭傷害"(預設滿數值) 的數量、"昏頭脹腦" 也計入此項
-    "mods": [8.5, 9.5, 9.7],      # 裝備模組(預設爆頭傷害)，可填寫 "爆頭傷害 10 %" 或是數字
-    "weapon_prototype": [False, "WD_rifle"] # 武器是否為原形(三個詞條當中滿數值的那一個種類)
-}
-
-Forcing_Chest_ChainKiller = False # 是否強制綁定連環殺手
-
-Activate_Sesonal_Modifier = True  # 是否啟用賽季修改器
-
-query_config = {
-    "filter": {
-        "first_hit": {
-            "enabled": False,  # 依據第一擊傷害作為篩選門檻
-            "min": 6_360_822   # 單人 + 英雄難度，一般老練敵人(紫怪)
-        },
-        "second_hit": {
-            "enabled": False,  # 依據第二擊傷害作為篩選門檻
-            "min": 14_752_327  # 單人 + 傳奇難度，一般菁英敵人(金怪)
-        },
-        "upper_limit": {
-            "enabled": False,  # 依據傷害上限作為篩選門檻
-            "min": 25_172_179  # 四人 + 傳奇難度，一般菁英敵人(金怪)
-        }
-    },
-    "sort": {
-        "key": "second_hit",    # 可依據 first_hit / second_hit / upper_limit 進行排序
-        "descending": True     # 由高到低進行排序
-    },
-    "top_n": 10                # 列出的配裝數量
-}
+# =============================================================================
+# agent_config = {
+#     "agent_watch": 1000,          # 手錶等級(預設武器傷害及爆頭傷害全滿)
+#     "agent_class": "精準射手",     # 精準射手提供爆頭傷害、爆破專家提供掩體外傷害，其他特化職業不影響堅定獵頭傷害計算
+#     "weapon": "1886",             # 目前可選用 1886, SR-1, 白色死神, 戰術.308
+#     "weapon_grade": 12,           # 武器專精等級
+#     "equip_core": 6,              # 裝備詞條當中 "武器傷害"(預設滿數值) 的數量
+#     "equip_sub": 6,               # 裝備詞條當中 "爆頭傷害"(預設滿數值) 的數量、"昏頭脹腦" 也計入此項
+#     "mods": [8.5, 9.5, 9.7],      # 裝備模組(預設爆頭傷害)，可填寫 "爆頭傷害 10 %" 或是數字
+#     "weapon_prototype": [False, "WD_rifle"] # 武器是否為原形(三個詞條當中滿數值的那一個種類)
+# }
+# 
+# Forcing_Chest_ChainKiller = False # 是否強制綁定連環殺手
+# 
+# Activate_Sesonal_Modifier = False  # 是否啟用賽季修改器
+# 
+# query_config = {
+#     "filter": {
+#         "first_hit": {
+#             "enabled": False,  # 依據第一擊傷害作為篩選門檻
+#             "min": 6_360_822   # 單人 + 英雄難度，一般老練敵人(紫怪)
+#         },
+#         "second_hit": {
+#             "enabled": False,  # 依據第二擊傷害作為篩選門檻
+#             "min": 14_752_327  # 單人 + 傳奇難度，一般菁英敵人(金怪)
+#         },
+#         "upper_limit": {
+#             "enabled": False,  # 依據傷害上限作為篩選門檻
+#             "min": 25_172_179  # 四人 + 傳奇難度，一般菁英敵人(金怪)
+#         }
+#     },
+#     "sort": {
+#         "key": "second_hit",    # 可依據 first_hit / second_hit / upper_limit 進行排序
+#         "descending": True     # 由高到低進行排序
+#     },
+#     "top_n": 10                # 列出的配裝數量
+# }
+# =============================================================================
 
 
 # =========================================================
@@ -216,10 +218,12 @@ def equip_mods(stats, mods):
     return stats
 
 # ✔ 原形裝備 (目前僅考慮武器數值、暫未考慮強化天賦)
-def prototype(stats, weapon_prototype):
+def prototype(stats, weapon, weapon_prototype):
     if weapon_prototype[0] == True:
         if weapon_prototype[1] == "WD_rifle" or weapon_prototype[1] == "WD_marksman":
             stats[weapon_prototype[1]] += 7.5
+        elif weapon_prototype[1] == "HSD" and "weapon" == "白色死神":
+            stats["HSD"] += 68.5
         elif weapon_prototype[1] == "HSD":
             stats["HSD"] += 55.5
         elif weapon_prototype[1] == "DTTOOC":
@@ -276,10 +280,6 @@ def apply_season_bonus(stats, bonus):
             print(f"⚠️ 忽略未知屬性: {k}")
     return stats
 
-if Activate_Sesonal_Modifier == True:
-    print("\n=== 賽季修改器啟用中 ===")
-    season_bonus = get_season_bonus()
-
 # 整合所有「基礎數值來源」 (👉 上述的數值來源都在這裡集中處理)
 def build_base_stats(config):
 
@@ -292,7 +292,7 @@ def build_base_stats(config):
     stats = equip_main(stats, config["equip_core"])
     stats = equip_minor(stats, config["equip_sub"])
     stats = equip_mods(stats, config["mods"])
-    stats = prototype(stats, config["weapon_prototype"])
+    stats = prototype(stats, config["weapon"], config["weapon_prototype"])
 
     return stats
 
@@ -463,43 +463,56 @@ def calc_damage(stats, combo, brand_count, max_hits=10):
 # =========================================================
 # 【7】評估 Build（整合所有系統）
 # =========================================================
-def evaluate_build(combo, config):
+def evaluate_build(combo, config, season_bonus, need_stats=False):
 
     brands = [item[1] for item in combo]
     brand_count = Counter(brands)
 
     stats = build_base_stats(config)
     stats = apply_brand_effects(brand_count, stats)
-    if Activate_Sesonal_Modifier == True:
+    if season_bonus:
         stats = apply_season_bonus(stats, season_bonus)
     stats = apply_item_stats(combo, stats)
     stats = finalize_stats(stats, config)
 
     dmg_info = calc_damage(stats, combo, brand_count)
-
-    return {
+    
+    result = {
         "combo": [item[0] for item in combo],
-        "stats": stats,
         "first_hit": dmg_info["first_hit"],
         "second_hit": dmg_info["first_5_hits"][1],
         "third_hit": dmg_info["first_5_hits"][2],
         "first_5_hits": dmg_info["first_5_hits"],
         "upper_limit": dmg_info["upper_limit"]
     }
+    
+    if need_stats:
+        result["stats"] = stats
+
+    return result
 
 # =========================================================
 # 【8】主程式：產生所有合理組合 + 排序
 # =========================================================
-valid_builds = []
 
-for combo in product(*all_parts):
-    if is_valid_build(combo, Forcing_Chest_ChainKiller):
-        valid_builds.append(combo)
+# =============================================================================
+# valid_builds = []
+# 
+# for combo in product(*all_parts):
+#     if is_valid_build(combo, Forcing_Chest_ChainKiller):
+#         valid_builds.append(combo)
+# 
+# print(f"合理組合數量: {len(valid_builds)}")
+# =============================================================================
 
-print(f"合理組合數量: {len(valid_builds)}")
-
-# 評估所有 build
-results = [evaluate_build(c, agent_config) for c in valid_builds]
+# =============================================================================
+# if Activate_Sesonal_Modifier == True:
+#     print("\n=== 賽季修改器啟用中 ===")
+#     season_bonus = get_season_bonus()
+# 
+# # 評估所有 build
+# results = [evaluate_build(c, agent_config, season_bonus) for c in valid_builds]
+# =============================================================================
 
 def apply_filters(results, query_config):
 
@@ -578,18 +591,99 @@ def assign_rank(results, key):
 
     return ranked
 
-print(f"符合傷害門檻組合數量: {len(apply_filters(results, query_config))}")
+def pass_filter(r, query_config):
 
-if len(apply_filters(results, query_config)) == 0:
-    print("無符合傷害門檻之裝備組合，建議提高數值或調整修改器搭配、或是改用其他武器")
+    filters = query_config["filter"]
 
-final_results = run_query(results, query_config)
+    # 第一擊
+    if filters["first_hit"]["enabled"]:
+        if r["first_hit"] < filters["first_hit"]["min"]:
+            return False
 
-final_results = assign_rank(final_results, key=query_config["sort"]["key"])
+    # 第二擊
+    if filters["second_hit"]["enabled"]:
+        if r["second_hit"] < filters["second_hit"]["min"]:
+            return False
 
-for r in final_results:
-    print(f"\n=== 第 {r['rank']} 名 ===")
-    print("裝備:  ", r["combo"])
-    print("前五擊:", r["first_5_hits"])
-    print("上限:  ", r["upper_limit"])
-    print("數值:  ", format_stats(r["stats"]))
+    # 上限
+    if filters["upper_limit"]["enabled"]:
+        if r["upper_limit"] < filters["upper_limit"]["min"]:
+            return False
+
+    return True
+
+def run_query_topN(valid_builds, agent_config, query_config, season_bonus, need_stats):
+
+    sort_key = query_config["sort"]["key"]
+    descending = query_config["sort"]["descending"]
+    top_n = query_config["top_n"]
+
+    results = []
+
+    for c in valid_builds:
+
+        r = evaluate_build(c, agent_config, season_bonus, need_stats)
+
+        # ⭐ 篩選（單筆）
+        if not pass_filter(r, query_config):
+            continue
+
+        results.append(r)
+
+        # ⭐ 維持排序
+        results.sort(key=lambda x: x[sort_key], reverse=descending)
+
+        # ⭐ 控制長度（關鍵）
+        if len(results) > top_n:
+            results.pop()   # 移除最差的一個
+
+    return results
+
+# =============================================================================
+# print(f"符合傷害門檻組合數量: {len(apply_filters(results, query_config))}")
+# 
+# if len(apply_filters(results, query_config)) == 0:
+#     print("無符合傷害門檻之裝備組合，建議提高數值或調整修改器搭配、或是改用其他武器")
+# =============================================================================
+
+# =============================================================================
+# final_results = run_query(results, query_config)
+# 
+# final_results = assign_rank(final_results, key=query_config["sort"]["key"])
+# =============================================================================
+
+# =============================================================================
+# for r in final_results:
+#     print(f"\n=== 第 {r['rank']} 名 ===")
+#     print("裝備:  ", r["combo"])
+#     print("前五擊:", r["first_5_hits"])
+#     print("上限:  ", r["upper_limit"])
+#     print("數值:  ", format_stats(r["stats"]))
+# =============================================================================
+    
+def run_calculation(agent_config, query_config, Forcing_Chest_ChainKiller, Activate_Sesonal_Modifier, season_bonus, show_stats):
+    import streamlit as st
+    import gc
+    @st.cache_data
+    def generate_valid_builds(Forcing_Chest_ChainKiller):
+        valid_builds = []
+        for combo in product(*all_parts):
+            if is_valid_build(combo, Forcing_Chest_ChainKiller):
+                valid_builds.append(combo)
+        return valid_builds
+
+    valid_builds = generate_valid_builds(Forcing_Chest_ChainKiller)
+    final_results = run_query_topN(
+        valid_builds,
+        agent_config,
+        query_config,
+        season_bonus,
+        need_stats = show_stats
+    )
+
+    final_results = assign_rank(final_results, query_config["sort"]["key"])
+
+    valid_build_count = len(valid_builds)
+    del valid_builds
+    gc.collect()
+    return valid_build_count, final_results
