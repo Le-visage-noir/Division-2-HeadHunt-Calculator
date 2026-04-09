@@ -1,5 +1,2 @@
 streamlit
 pandas
-math
-itertools
-collections
