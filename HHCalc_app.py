@@ -5,11 +5,19 @@ from HeadHuntCalc_division2_Y8S1_TU27 import run_calculation
 st.title("Division 2 堅定獵頭配裝計算器")
 st.subheader("適用版本 Y8S1 / TU27")
 st.caption("Author: Le-visage-noir")
-# =========================
-# 側邊欄（所有輸入）
-# =========================
-with st.sidebar:
 
+if "run" not in st.session_state: # 各 tab 共通按鈕
+    st.session_state.run = False
+
+tab1, tab2, tab3 = st.tabs(["數值設定", "篩選條件", "計算結果"])
+# =========================
+# 分頁 1 數值設定
+# =========================
+with tab1:
+    
+    if st.button("開始計算", key="run_tab1"):
+        st.session_state.run = True
+    
     st.header("玩家設定")
 
     agent_watch = st.number_input("手錶等級 (僅區分 1000 以上及以下)", value=1000)
@@ -24,6 +32,8 @@ with st.sidebar:
         "武器",
         ["1886", "SR-1", "白色死神", "戰術.308"]
     )
+    if weapon != "1886":
+        st.write("目前預設不開鏡 (採用爆頭傷害 + 10 % 瞄準鏡)")
 
     weapon_grade = st.number_input("武器專精等級", value=0)
 
@@ -84,13 +94,6 @@ with st.sidebar:
     weapon_prototype = [use_prototype, prototype_type]
 
     # =========================
-    # 特殊條件
-    # =========================
-    st.header("特殊條件")
-
-    Forcing_Chest_ChainKiller = st.checkbox("強制連環殺手")
-
-    # =========================
     # 賽季加成
     # =========================
     st.header("賽季加成")
@@ -110,10 +113,22 @@ with st.sidebar:
             "TWD": season_twd
         }
 
+with tab2:
+    
+    if st.button("開始計算", key="run_tab2"):
+        st.session_state.run = True
+    
+    # =========================
+    # 特殊條件
+    # =========================
+    st.header("特殊條件")
+
+    Forcing_Chest_ChainKiller = st.checkbox("強制連環殺手")
+    
     # =========================
     # 篩選條件
     # =========================
-    st.header("篩選條件")
+    st.header("傷害門檻")
 
     use_first = st.checkbox("第一擊門檻", value=False)
     first_min = st.number_input("第一擊門檻值 (預設單人英雄紫怪)", value=6360822)
@@ -184,39 +199,44 @@ def format_stats(stats, ndigits=1):
             formatted[k] = v
     return formatted
 
-show_stats = st.toggle("顯示詳細數值（stats）", value=False)
+with tab3:
 
-if st.button("開始計算"):
-
-    valid_build_count, results = run_calculation(agent_config, query_config, Forcing_Chest_ChainKiller, Activate_Sesonal_Modifier, season_bonus, show_stats)
-    st.write(f"合理組合數量: {valid_build_count}")
-
-    table = []
-
-    for r in results:
-        row = {
-            "排名": r["rank"],
-            "裝備 (面具 / 背包 / 防彈衣 / 手套 / 槍套 / 護膝)": " / ".join(r["combo"]),
-            "第一擊": format_number(r["first_hit"]),
-            "上限": format_number(r["upper_limit"]),
-            "前五擊": " / ".join([format_number(x) for x in r["first_5_hits"]])
-        }
-        
-        if show_stats and "stats" in r:
-            stats = format_stats(r["stats"])
-
-            row.update({
-                "所有武器傷害": stats.get("AWD"),
-                "爆頭傷害": stats.get("HSD"),
-                "對掩體外傷害": stats.get("DTTOOC")
-            })
-
-        table.append(row)
-
-    df = pd.DataFrame(table)
-
-    st.dataframe(df)
+    if st.button("更新計算結果", key="run_tab3"):
+        st.session_state.run = True
     
-    if len(results) == 0:
-        st.write("無符合傷害門檻之裝備組合，建議提高數值或調整修改器搭配、或是改用其他武器")
+    show_stats = st.toggle("顯示結果中的詳細數值 (stats)", value=False)
+    
+    if st.session_state.run:
+        
+        valid_build_count, results = run_calculation(agent_config, query_config, Forcing_Chest_ChainKiller, Activate_Sesonal_Modifier, season_bonus, show_stats)
+        st.write(f"合理組合數量: {valid_build_count}")
+        
+        table = []
+        
+        for r in results:
+            row = {
+                "排名": r["rank"],
+                "裝備 (面具 / 背包 / 防彈衣 / 手套 / 槍套 / 護膝)": " / ".join(r["combo"]),
+                "第一擊": format_number(r["first_hit"]),
+                "上限": format_number(r["upper_limit"]),
+                "前五擊": " / ".join([format_number(x) for x in r["first_5_hits"]])
+            }
+            
+            if show_stats and "stats" in r:
+                stats = format_stats(r["stats"])
+                
+                row.update({
+                    "所有武器傷害": stats.get("AWD"),
+                    "爆頭傷害": stats.get("HSD"),
+                    "對掩體外傷害": stats.get("DTTOOC")
+                })
+                
+            table.append(row)
+
+        df = pd.DataFrame(table)
+
+        st.dataframe(df)
+        
+        if len(results) == 0:
+            st.write("無符合傷害門檻之裝備組合，建議提高數值或調整修改器搭配、或是改用其他武器")
     

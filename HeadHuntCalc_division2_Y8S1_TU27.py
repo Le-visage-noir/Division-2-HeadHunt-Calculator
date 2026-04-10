@@ -137,9 +137,9 @@ def watch_max_level(stats, agent_watch):
 def specialization(stats, agent_class):
     stats["WD_rifle"] += 15    # 共通加成
     stats["WD_marksman"] += 15 # 共通加成
-    if agent_class == "精準射手":
+    if agent_class == "精準射手 (爆頭傷害 15 %)":
         stats["HSD"] += 15
-    elif agent_class == "爆破專家":
+    elif agent_class == "爆破專家 (對掩體外傷害 5 %)":
         stats["DTTOOC"] += 5
     return stats
 
@@ -198,12 +198,12 @@ def weapon_expertise(stats, weapon_grade):
 
 # ✔ 裝備核心屬性 (預設 6 紅 + 滿數值)
 def equip_main(stats, equip_core):
-    stats["AWD"] += 15 * 6
+    stats["AWD"] += 15 * equip_core
     return stats
 
 # ✔ 裝備隨機詞條 (預設 6 爆頭傷害 10 %)
 def equip_minor(stats, equip_sub):
-    stats["HSD"] += 10 * 6
+    stats["HSD"] += 10 * equip_sub
     return stats
 
 # ✔ 裝備模組 (預設 3 個)
