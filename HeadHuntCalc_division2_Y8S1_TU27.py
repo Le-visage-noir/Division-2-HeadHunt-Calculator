@@ -155,19 +155,16 @@ def weapon_stats(stats, weapon):
         stats["WD_marksman"] += 15 # 核心屬性 (預設滿數值)
         stats["HSD"] += 0          # 槍種基礎數值
         stats["HSD"] += 111        # 核心屬性 (預設滿數值)
-        stats["HSD"] += 10         # 武器模組 (預設不開鏡)
     elif weapon == "白色死神":
         stats["BASE"] = 433563
         stats["WD_marksman"] += 15 # 核心屬性 (預設滿數值)
         stats["HSD"] += 0          # 槍種基礎數值
         stats["HSD"] += 137        # 核心屬性
-        stats["HSD"] += 10         # 武器模組 (預設不開鏡)
     elif weapon == "戰術.308":
         stats["BASE"] = 403709
         stats["WD_marksman"] += 15 # 核心屬性 (預設滿數值)
         stats["HSD"] += 0          # 槍種基礎數值
         stats["HSD"] += 111        # 核心屬性 (預設滿數值)
-        stats["HSD"] += 10         # 武器模組 (預設不開鏡)
     return stats
 
 # ✔ 武器數值 (判斷適用 WD 種類)
@@ -215,6 +212,18 @@ def equip_mods(stats, mods):
             stats["HSD"] += mod
         elif mod == "其他":
             stats["HSD"] += 0
+    return stats
+
+# ✔ 武器模組 (瞄準具)
+def weapon_mod(stats, weapon_mod):
+
+    if not weapon_mod:
+        return stats
+
+    for k, v in weapon_mod.items():
+        if k in stats:
+            stats[k] += v
+
     return stats
 
 # ✔ 原形裝備 (目前僅考慮武器數值、暫未考慮強化天賦)
@@ -292,6 +301,7 @@ def build_base_stats(config):
     stats = equip_main(stats, config["equip_core"])
     stats = equip_minor(stats, config["equip_sub"])
     stats = equip_mods(stats, config["mods"])
+    stats = weapon_mod(stats, config["weapon_mod"])
     stats = prototype(stats, config["weapon"], config["weapon_prototype"])
 
     return stats

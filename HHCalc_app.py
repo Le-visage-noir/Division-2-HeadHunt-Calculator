@@ -17,8 +17,9 @@ with tab1:
     
     if st.button("開始計算", key="run_tab1"):
         st.session_state.run = True
+        st.write("計算結果已更新，請切換到該分頁查看")
     
-    st.header("玩家設定")
+    st.subheader("玩家設定")
 
     agent_watch = st.number_input("手錶等級 (僅區分 1000 以上及以下)", value=1000)
 
@@ -27,13 +28,52 @@ with tab1:
         ["精準射手 (爆頭傷害 15 %)", "爆破專家 (對掩體外傷害 5 %)", "其他"],
         index=0
     )
+    
+    st.subheader("武器及裝備")
 
     weapon = st.selectbox(
-        "武器",
+        "選擇武器",
         ["1886", "SR-1", "白色死神", "戰術.308"]
     )
-    if weapon != "1886":
-        st.write("目前預設不開鏡 (採用爆頭傷害 + 10 % 瞄準鏡)")
+    
+    WEAPON_MOD_OPTIONS = {
+        "SR-1": {
+            "預設不開鏡 (爆頭傷害 + 10 %)": {"HSD": 10},
+            " 8 倍鏡 (爆頭傷害 + 30 %)": {"HSD": 30},
+            " 12 倍鏡 (爆頭傷害 + 35 %，裝彈速度 - 10 %)": {"HSD": 35},
+            "精準射手特化鏡 (爆頭傷害 + 45 %，爆擊傷害 - 5 %)": {"HSD": 45},
+            "其他": {}
+        },
+        "白色死神": {
+            "預設不開鏡 (爆頭傷害 + 10 %)": {"HSD": 10},
+            " 8 倍鏡 (爆頭傷害 + 30 %)": {"HSD": 30},
+            " 12 倍鏡 (爆頭傷害 + 35 %，裝彈速度 - 10 %)": {"HSD": 35},
+            "精準射手特化鏡 (爆頭傷害 + 45 %，爆擊傷害 - 5 %)": {"HSD": 45},
+            "其他": {}
+        },
+        "戰術.308": {
+            "預設不開鏡 (爆頭傷害 + 10 %)": {"HSD": 10},
+            " 8 倍鏡 (爆頭傷害 + 30 %)": {"HSD": 30},
+            " 12 倍鏡 (爆頭傷害 + 35 %，裝彈速度 - 10 %)": {"HSD": 35},
+            "精準射手特化鏡 (爆頭傷害 + 45 %，爆擊傷害 - 5 %)": {"HSD": 45},
+            "其他": {}
+        },
+        "1886": {}  # 無影響堅定獵頭傷害計算的模組
+    }
+
+    mod_options = WEAPON_MOD_OPTIONS.get(weapon, {})
+    
+    weapon_mod = None
+    
+    if len(mod_options) == 0:
+        st.info("此武器無影響堅定獵頭傷害計算的模組")
+    else:
+        selected_mod = st.selectbox(
+            "選擇瞄準具",
+            list(mod_options.keys()),
+            index=0
+        )
+        weapon_mod = mod_options[selected_mod]
 
     weapon_grade = st.number_input("武器專精等級", value=0)
 
@@ -41,10 +81,9 @@ with tab1:
 
     equip_sub = st.selectbox("裝備爆頭詞條數量 (預設 10 %)", list(range(7)), index=6)
 
-    st.subheader("裝備模組 (爆頭傷害)")
-    mod1 = st.number_input("模組1", value=10.0)
-    mod2 = st.number_input("模組2", value=10.0)
-    mod3 = st.number_input("模組3", value=10.0)
+    mod1 = st.number_input("裝備模組 1 (爆頭傷害)", value=10.0)
+    mod2 = st.number_input("裝備模組 2 (爆頭傷害)", value=10.0)
+    mod3 = st.number_input("裝備模組 3 (爆頭傷害)", value=10.0)
 
     mods = [mod1, mod2, mod3]
 
@@ -96,7 +135,7 @@ with tab1:
     # =========================
     # 賽季加成
     # =========================
-    st.header("賽季加成")
+    st.subheader("賽季加成")
 
     Activate_Sesonal_Modifier = st.checkbox("啟用賽季加成")
 
@@ -117,18 +156,19 @@ with tab2:
     
     if st.button("開始計算", key="run_tab2"):
         st.session_state.run = True
+        st.write("計算結果已更新，請切換到該分頁查看")
     
     # =========================
     # 特殊條件
     # =========================
-    st.header("特殊條件")
+    st.subheader("特殊條件")
 
     Forcing_Chest_ChainKiller = st.checkbox("強制連環殺手")
     
     # =========================
     # 篩選條件
     # =========================
-    st.header("傷害門檻")
+    st.subheader("傷害門檻")
 
     use_first = st.checkbox("第一擊門檻", value=False)
     first_min = st.number_input("第一擊門檻值 (預設單人英雄紫怪)", value=6360822)
@@ -142,7 +182,7 @@ with tab2:
     # =========================
     # 排序條件
     # =========================
-    st.header("排序")
+    st.subheader("排序")
 
     sort_key_display = st.selectbox(
         "排序依據",
@@ -171,6 +211,7 @@ agent_config = {
     "equip_core": equip_core,
     "equip_sub": equip_sub,
     "mods": mods,
+    "weapon_mod": weapon_mod,
     "weapon_prototype": weapon_prototype
 }
 
@@ -239,4 +280,13 @@ with tab3:
         
         if len(results) == 0:
             st.write("無符合傷害門檻之裝備組合，建議提高數值或調整修改器搭配、或是改用其他武器")
+
+with st.sidebar:
+    st.title("匯出參數")
+    if st.button("儲存計算參數 .json 檔案 (beta)"):
+        st.write("此功能尚未實裝，敬請期待")
+    if st.button("儲存計算參數分享碼 (beta)"):
+        st.write("此功能尚未實裝，敬請期待")
     
+    st.title("匯入參數")
+    import_from_code = st.text_input("請貼上分享碼 (beta)")
