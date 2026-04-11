@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 from HeadHuntCalc_division2_Y8S1_TU27 import run_calculation
+from HHCalc_code import decode_build_redirect, encode_build_v2
 
 st.title("Division 2 堅定獵頭配裝計算器")
 st.subheader("適用版本 Y8S1 / TU27")
@@ -29,7 +30,7 @@ with tab1:
         index=0
     )
     
-    st.subheader("武器及裝備")
+    st.subheader("武器")
 
     weapon = st.selectbox(
         "選擇武器",
@@ -76,6 +77,62 @@ with tab1:
         weapon_mod = mod_options[selected_mod]
 
     weapon_grade = st.number_input("武器專精等級", value=0)
+    
+    # =========================
+    # 原型武器
+    # =========================
+
+    use_prototype = st.checkbox("啟用原型武器 (非原型武器預設數值為全滿)")
+    prototype_stats = {}
+    
+    PROTOTYPE_SPEC = {
+        "1886": {
+            "WD_rifle": {"label": "步槍傷害", "min": 15.0, "max": 22.5},
+            "DTTOOC": {"label": "對掩體外傷害", "min": 10, "max": 15}
+        },
+        "SR-1": {
+            "WD_marksman": {"label": "射手步槍傷害", "min": 15.0, "max": 22.5},
+            "HSD": {"label": "爆頭傷害", "min": 111.0, "max": 166.5},
+            "DTTOOC": {"label": "對掩體外傷害", "min": 10, "max": 15}
+        },
+        "白色死神": {
+            "WD_marksman": {"label": "射手步槍傷害", "min": 15.0, "max": 22.5},
+            "HSD": {"label": "爆頭傷害", "min": 137.0, "max": 179.5},
+            "DTTOOC": {"label": "對掩體外傷害", "min": 10, "max": 15}
+        },
+        "戰術.308": {
+            "WD_marksman": {"label": "射手步槍傷害", "min": 15.0, "max": 22.5},
+            "HSD": {"label": "爆頭傷害", "min": 111.0, "max": 166.5},
+            "DTTOOC": {"label": "對掩體外傷害", "min": 10, "max": 15}
+        }
+    }
+        
+    spec = PROTOTYPE_SPEC.get(weapon, {})
+
+    if not use_prototype:
+        # 非原型武器 → 直接用 min
+        for key, meta in spec.items():
+            prototype_stats[key] = meta["min"]
+    else:        
+        for key, meta in spec.items():
+            is_int = (key == "DTTOOC")
+            val = st.slider(
+                meta["label"],
+                min_value=float(meta["min"]),
+                max_value=float(meta["max"]),
+                value=float(meta["max"]),   # 預設 max（最佳解）
+                step=1.0 if is_int else 0.1,
+                key=f"proto_{key}"
+            )
+            
+            prototype_stats[key] = int(val) if is_int else round(val, 1)
+
+    weapon_prototype = {
+        "enabled": use_prototype,
+        "stats": prototype_stats
+    }
+    
+    st.subheader("裝備")
 
     equip_core = st.selectbox("裝備紅核心數量 (預設 15 %)", list(range(7)), index=6)
 
@@ -88,56 +145,11 @@ with tab1:
     mods = [mod1, mod2, mod3]
 
     # =========================
-    # 原形武器
-    # =========================
-    st.subheader("原形武器")
-
-    use_prototype = st.checkbox("啟用原形武器")
-
-    prototype_type = None
-    if use_prototype:
-        PROTOTYPE_OPTIONS = {
-            "1886": {
-                "步槍傷害": "WD_rifle",
-                "對掩體外傷害": "DTTOOC"
-            },
-            "SR-1": {
-                "射手步槍傷害": "WD_marksman",
-                "爆頭傷害": "HSD",
-                "對掩體外傷害": "DTTOOC"
-            },
-            "白色死神": {
-                "射手步槍傷害": "WD_marksman",
-                "爆頭傷害": "HSD",
-                "對掩體外傷害": "DTTOOC"
-            },
-            "戰術.308": {
-                "射手步槍傷害": "WD_marksman",
-                "爆頭傷害": "HSD",
-                "對掩體外傷害": "DTTOOC"
-            }
-        }
-        # ⭐ 根據武器抓可選項目
-        options_dict = PROTOTYPE_OPTIONS.get(weapon, {})
-        
-        display_options = list(options_dict.keys())
-        
-        selected_display = st.selectbox(
-            "原形類型",
-            display_options
-        )
-
-        # ⭐ 轉換成內部參數
-        prototype_type = options_dict[selected_display]
-
-    weapon_prototype = [use_prototype, prototype_type]
-
-    # =========================
     # 賽季加成
     # =========================
     st.subheader("賽季加成")
 
-    Activate_Sesonal_Modifier = st.checkbox("啟用賽季加成")
+    Activate_Sesonal_Modifier = st.checkbox("啟用賽季加成 (beta)")
 
     season_bonus = {}
 
@@ -174,7 +186,7 @@ with tab2:
     first_min = st.number_input("第一擊門檻值 (預設單人英雄紫怪)", value=6360822)
 
     use_second = st.checkbox("第二擊門檻", value=False)
-    second_min = st.number_input("第二擊門檻值 (預設單人英雄金怪)", value=14752327)
+    second_min = st.number_input("第二擊門檻值 (預設單人傳奇金怪)", value=14752327)
 
     use_upper = st.checkbox("上限門檻", value=False)
     upper_min = st.number_input("上限門檻值 (預設四人傳奇金怪)", value=25172179)
@@ -283,10 +295,52 @@ with tab3:
 
 with st.sidebar:
     st.title("匯出參數")
-    if st.button("儲存計算參數 .json 檔案 (beta)"):
-        st.write("此功能尚未實裝，敬請期待")
     if st.button("儲存計算參數分享碼 (beta)"):
-        st.write("此功能尚未實裝，敬請期待")
+        code = encode_build_v2(
+            agent_config,
+            query_config,
+            Forcing_Chest_ChainKiller,
+            Activate_Sesonal_Modifier,
+            season_bonus    
+        )
+        st.session_state.share_code = code
+        if "share_code" in st.session_state:
+            code = st.session_state.share_code
+            st.code(code)
     
     st.title("匯入參數")
     import_from_code = st.text_input("請貼上分享碼 (beta)")
+    if st.button("載入分享碼"):
+        try:
+            ac, qc, fck, season_on, sb = decode_build_redirect(import_from_code)
+            # 將參數暫時 update 到 st.session_state 而不是直接放進正式參數
+            st.session_state.update({
+                "agent_watch": ac["agent_watch"],
+                "agent_class": ac["agent_class"],
+                "weapon": ac["weapon"],
+                "weapon_grade": ac["weapon_grade"],
+                "equip_core": ac["equip_core"],
+                "equip_sub": ac["equip_sub"],
+                "mods": ac["mods"],
+                "weapon_mod": ac.get("weapon_mod", {}),
+                "weapon_prototype": ac["weapon_prototype"],
+                "Forcing_Chest_ChainKiller": fck,
+                "season_bonus": sb
+            })
+
+            st.session_state.import_success = True
+            st.rerun()
+            
+        except Exception as e:
+            st.session_state.import_error = str(e)
+            st.rerun()
+    
+    if st.session_state.get("import_success"):
+        st.success("載入成功")
+        st.caption("(後台已儲存參數、自動更新參數功能正在開發中)")
+        # st.write(st.session_state)
+        st.session_state.import_success = False
+        
+    if st.session_state.get("import_error"):
+        st.error("分享碼錯誤")
+        st.session_state.import_error = None

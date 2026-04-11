@@ -143,28 +143,20 @@ def specialization(stats, agent_class):
         stats["DTTOOC"] += 5
     return stats
 
-# ✔ 武器數值
-def weapon_stats(stats, weapon):
-    stats["DTTOOC"] += 10          # 隨機詞條統一掩體外傷害
+# ✔ 武器基本數值
+def weapon_base_stats(stats, weapon):
     if weapon == "1886":
         stats["BASE"] = 386892
-        stats["WD_rifle"] += 15    # 核心屬性 (預設滿數值)
         stats["HSD"] += 60         # 槍種基礎數值
     elif weapon == "SR-1":
         stats["BASE"] = 409255
-        stats["WD_marksman"] += 15 # 核心屬性 (預設滿數值)
         stats["HSD"] += 0          # 槍種基礎數值
-        stats["HSD"] += 111        # 核心屬性 (預設滿數值)
     elif weapon == "白色死神":
         stats["BASE"] = 433563
-        stats["WD_marksman"] += 15 # 核心屬性 (預設滿數值)
         stats["HSD"] += 0          # 槍種基礎數值
-        stats["HSD"] += 137        # 核心屬性
     elif weapon == "戰術.308":
         stats["BASE"] = 403709
-        stats["WD_marksman"] += 15 # 核心屬性 (預設滿數值)
         stats["HSD"] += 0          # 槍種基礎數值
-        stats["HSD"] += 111        # 核心屬性 (預設滿數值)
     return stats
 
 # ✔ 武器數值 (判斷適用 WD 種類)
@@ -227,16 +219,12 @@ def weapon_mod(stats, weapon_mod):
     return stats
 
 # ✔ 原形裝備 (目前僅考慮武器數值、暫未考慮強化天賦)
-def prototype(stats, weapon, weapon_prototype):
-    if weapon_prototype[0] == True:
-        if weapon_prototype[1] == "WD_rifle" or weapon_prototype[1] == "WD_marksman":
-            stats[weapon_prototype[1]] += 7.5
-        elif weapon_prototype[1] == "HSD" and "weapon" == "白色死神":
-            stats["HSD"] += 68.5
-        elif weapon_prototype[1] == "HSD":
-            stats["HSD"] += 55.5
-        elif weapon_prototype[1] == "DTTOOC":
-            stats["DTTOOC"] += 5
+def weapon_spec_include_prototype(stats, weapon_prototype):
+
+    for k, v in weapon_prototype["stats"].items():
+        if k in stats:
+            stats[k] += v
+
     return stats
 
 # ✔ 賽季修改器 (預設關閉)
@@ -296,13 +284,13 @@ def build_base_stats(config):
 
     stats = watch_max_level(stats, config["agent_watch"])
     stats = specialization(stats, config["agent_class"])
-    stats = weapon_stats(stats, config["weapon"])
+    stats = weapon_base_stats(stats, config["weapon"])
     stats = weapon_expertise(stats, config["weapon_grade"])
     stats = equip_main(stats, config["equip_core"])
     stats = equip_minor(stats, config["equip_sub"])
     stats = equip_mods(stats, config["mods"])
     stats = weapon_mod(stats, config["weapon_mod"])
-    stats = prototype(stats, config["weapon"], config["weapon_prototype"])
+    stats = weapon_spec_include_prototype(stats, config["weapon_prototype"])
 
     return stats
 
