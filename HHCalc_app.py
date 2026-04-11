@@ -277,11 +277,11 @@ with tab3:
             
             if show_stats and "stats" in r:
                 stats = format_stats(r["stats"])
-                
+                weapon_dmg = r["first_hit"] / (( 1 + stats.get("HSD")/100 )*( 1 + stats.get("TWD")/100 )*( 1 + stats.get("DTTOOC")/100 ))
                 row.update({
-                    "所有武器傷害": stats.get("AWD"),
-                    "爆頭傷害": stats.get("HSD"),
-                    "對掩體外傷害": stats.get("DTTOOC")
+                    "武器傷害": format_number(int(weapon_dmg)),
+                    "爆頭傷害": f"{stats.get('HSD'):.1f}%",
+                    "對掩體外傷害": f"{int(stats.get('DTTOOC'))}%"
                 })
                 
             table.append(row)
