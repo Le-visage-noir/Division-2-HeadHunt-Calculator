@@ -81,6 +81,18 @@ def find_weapon_mod_index(weapon_name, weapon_mod_dict):
  
 if "run" not in st.session_state:
     st.session_state.run = False
+    
+# 為 number_input 設定初始預設值（只在 key 不存在時才設定，不覆蓋匯入值）
+_number_input_defaults = {
+    "agent_watch": 1000,
+    "weapon_grade": 0,
+    "mod1": 10.0,
+    "mod2": 10.0,
+    "mod3": 10.0,
+}
+for _k, _v in _number_input_defaults.items():
+    if _k not in st.session_state:
+        st.session_state[_k] = _v
  
 # 在所有 widget 渲染前，若有匯入資料則寫入 session_state
 if "_import_data" in st.session_state:
@@ -129,7 +141,6 @@ with tab1:
  
     agent_watch = st.number_input(
         "手錶等級 (僅區分 1000 以上及以下)",
-        value=int(st.session_state.get("agent_watch", 1000)),
         step=1,
         key="agent_watch"
     )
@@ -160,7 +171,6 @@ with tab1:
  
     weapon_grade = st.number_input(
         "武器專精等級",
-        value=int(st.session_state.get("weapon_grade", 0)),
         step=1,
         key="weapon_grade"
     )
@@ -208,21 +218,9 @@ with tab1:
         key="equip_sub"
     )
  
-    mod1 = st.number_input(
-        "裝備模組 1 (爆頭傷害)",
-        value=float(st.session_state.get("mod1", 10.0)),
-        key="mod1"
-    )
-    mod2 = st.number_input(
-        "裝備模組 2 (爆頭傷害)",
-        value=float(st.session_state.get("mod2", 10.0)),
-        key="mod2"
-    )
-    mod3 = st.number_input(
-        "裝備模組 3 (爆頭傷害)",
-        value=float(st.session_state.get("mod3", 10.0)),
-        key="mod3"
-    )
+    mod1 = st.number_input("裝備模組 1 (爆頭傷害)", key="mod1")
+    mod2 = st.number_input("裝備模組 2 (爆頭傷害)", key="mod2")
+    mod3 = st.number_input("裝備模組 3 (爆頭傷害)", key="mod3")
     mods = [mod1, mod2, mod3]
 
     # =========================
