@@ -86,6 +86,8 @@ if "run" not in st.session_state:
 _number_input_defaults = {
     "agent_watch": 1000,
     "weapon_grade": 0,
+    "equip_core": int(6),
+    "equip_sub": int(6),
     "mod1": 10.0,
     "mod2": 10.0,
     "mod3": 10.0,
@@ -178,7 +180,6 @@ with tab1:
     # =========================
     # 原型武器
     # =========================
-
     use_prototype = st.checkbox(
         "啟用原型武器 (非原型武器預設數值為全滿)",
         key="use_prototype"
@@ -192,18 +193,17 @@ with tab1:
     else:
         for k, meta in spec.items():
             is_int = (k == "DTTOOC")
-            default_val = float(st.session_state.get(f"proto_{k}", meta["max"]))
+            slider_key = f"proto_{k}"
+            if slider_key not in st.session_state:
+                st.session_state[slider_key] = float(meta["max"])
             val = st.slider(
                 meta["label"],
                 min_value=float(meta["min"]),
                 max_value=float(meta["max"]),
-                value=default_val,
                 step=1.0 if is_int else 0.1,
-                key=f"proto_{k}"
+                key=slider_key
             )
             prototype_stats[k] = int(val) if is_int else round(val, 1)
- 
-    weapon_prototype = {"enabled": use_prototype, "stats": prototype_stats}
  
     weapon_prototype = {"enabled": use_prototype, "stats": prototype_stats}
 
