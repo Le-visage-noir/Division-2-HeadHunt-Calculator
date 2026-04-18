@@ -3,7 +3,7 @@ import pandas as pd
 from HeadHuntCalc_division2_Y8S1_TU27 import run_calculation
 from HHCalc_code import decode_build_redirect, encode_build_v2
 
-st.title("Division 2 堅定獵頭配裝計算器")
+st.title("Division 2 堅定獵頭配裝計算工具")
 st.subheader("適用版本 Y8S1 / TU27")
 st.caption("Author: Le-visage-noir")
 
