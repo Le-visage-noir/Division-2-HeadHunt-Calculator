@@ -405,7 +405,7 @@ with st.sidebar:
  
     if st.session_state.get("import_success"):
         st.success("載入成功")
-        st.caption("(後台已儲存參數、自動更新參數功能正在開發中)")
+        st.caption("(請回到主畫面確認已載入的參數)")
         st.session_state.import_success = False
  
     if st.session_state.get("import_error"):
